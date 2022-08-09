@@ -13,7 +13,12 @@
     <!-- Import the webpage's stylesheet -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.1/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
     <link href="https://cdn.jsdelivr.net/npm/daisyui@1.11.1/dist/full.css" rel="stylesheet" type="text/css" />
+    <!-- Dish core -->
+    <link rel="stylesheet" href="./dish/styles.css">
+    <script src="./dish/fe_func.js"></script>
     <script src="//cdn.metered.ca/sdk/video/1.1.6/sdk.min.js"></script>
+
+    <script src="https://kit.fontawesome.com/2673d2aa95.js" crossorigin="anonymous"></script>
 
 </head>
 
@@ -145,14 +150,15 @@
     </div>
 
         <!-- Meeting view -->
-        <div id="meetingView" class="hidden ">
+        <div id="meetingView" class="hidden">
+            <div class="Scenary" style="margin-left:12vw;margin-top:15px; width: 75vw; height:85vh; border-style:solid"></div>
             <!-- remote video containers -->
-            <div id="remoteParticipantContainer" style="display: flex; height: 135px;" class="border-2">
+            <!-- <div id="remoteParticipantContainer" style="display: flex; height: 135px;" class="border-2">
         
-            </div>
+            </div> -->
     
             <!-- Active Speaker -->
-            <div class="mt-4">
+            <!-- <div class="mt-4">
                 <div style=" border-radius: 5px;" class="">
                     <video id="activeSpeakerVideo" muted autoplay playsinline poster="./images/person-icon-12.jpg"
                         style="padding: 0; margin-left: 24vw; width: 50%; height: 550px;"></video>
@@ -168,7 +174,7 @@
                 <div id="meetingAreaUsername" class="bg-base-200	" style=" text-align: center;">
                    
                 </div>
-            </div>
+            </div> -->
             <!-- Controls -->
             <div style="display: flex; justify-content: center; margin-top: 20px;" class="space-x-4">
                 <button id="meetingViewMicrophone" class="btn">
@@ -197,10 +203,16 @@
                         </path>
                     </svg>
                 </button>
+
+                <button id = "meetingViewMessage" class="btn">
+                    <i class="fa-regular fa-comments fa-xl"></i>
+                </i></button>
                 
                 <button id="meetingViewLeave" class="btn">
                     <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"></path></svg>
                 </button>
+            
+                
             </div>
         </div>
 

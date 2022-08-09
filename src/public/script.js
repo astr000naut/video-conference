@@ -2,6 +2,9 @@ const meeting = new Metered.Meeting();
 let meetingId = "";
 var token = "";
 var currentActiveSpeaker = "";
+let scenary = document.getElementsByClassName("Scenary")[0];
+// create dish
+let dish = new Dish(scenary);
 
 
 $("#joinPrivate").on("click", () => {
@@ -306,7 +309,10 @@ $("#joinMeetingButton").on("click", async function () {
         console.log("Meeting joined", meetingInfo);
         $("#waitingArea").addClass("hidden");
         $("#meetingView").removeClass("hidden");
-        $("#meetingAreaUsername").text(username + ' (you)');
+
+        dish.join(meeting.participantSessionId, username);
+        // dish.playAll();
+
         if (cameraOn) {
             $("#meetingViewCamera").addClass("bg-accent");
             if (localVideoStream) {
@@ -323,8 +329,9 @@ $("#joinMeetingButton").on("click", async function () {
             $("#meetingViewMicrophone").addClass("bg-accent");
             await meeting.startAudio();
         }
+
     } catch (ex) {
-        console.log("Error occurred when joining the meeting", ex);
+        console.log("Error occurred when joining the meetingg", ex);
     }
 });
 
@@ -344,6 +351,7 @@ $("#meetingViewMicrophone").on("click", async function () {
 });
 
 $("#meetingViewCamera").on("click", async function () {
+    console.log(cameraOn);
     if (cameraOn) {
         cameraOn = false;
         $("#meetingViewCamera").removeClass("bg-accent");
@@ -360,6 +368,7 @@ $("#meetingViewScreen").on("click", async function () {
     if (screenSharing) {
         $("#meetingViewScreen").removeClass("bg-accent");
         await meeting.stopVideo();
+        screenSharing = false;
         return;
     } else {
         try {
@@ -383,21 +392,24 @@ meeting.on("localTrackStarted", function (trackItem) {
     if (trackItem.type === "video") {
         let track = trackItem.track;
         let mediaStream = new MediaStream([track]);
-        $("#meetingAreaLocalVideo")[0].srcObject = mediaStream;
-        $("#meetingAreaLocalVideo")[0].play();
+
+        $(`#participant-${meeting.participantSessionId}-video`)[0].srcObject = mediaStream;
+        $(`#participant-${meeting.participantSessionId}-video`)[0].play();
     }
 });
 meeting.on("localTrackUpdated", function (trackItem) {
     if (trackItem.type === "video") {
         let track = trackItem.track;
         let mediaStream = new MediaStream([track]);
-        $("#meetingAreaLocalVideo")[0].srcObject = mediaStream;
+        $(`#participant-${meeting.participantSessionId}-video`)[0].srcObject = mediaStream;
     }
 });
 
 meeting.on("localTrackStopped", function (localTrackItem) {
+    console.log(localTrackItem.type);
+    console.log(localTrackItem);
     if (localTrackItem.type === "video") {
-        $("#meetingAreaLocalVideo")[0].srcObject = null;
+        $(`#participant-${meeting.participantSessionId}-video`)[0].srcObject = null;
     }
 });
 
@@ -413,52 +425,54 @@ meeting.on("remoteTrackStarted", function (trackItem) {
 
 meeting.on("remoteTrackStopped", function (trackItem) {
     if (trackItem.participantSessionId === meeting.participantSessionId) return;
-    $(`#participant-${trackItem.participantSessionId}-${trackItem.type}`)[0].srcObject = null;
+    if ($(`#participant-${trackItem.participantSessionId}-${trackItem.type}`)[0] != null) {
+        $(`#participant-${trackItem.participantSessionId}-${trackItem.type}`)[0].srcObject = null;
+    }
 });
 
 meeting.on("participantJoined", function (participantInfo) {
-
-    if (participantInfo._id === meeting.participantSessionId) return;
-    var participant =
-        `<div id="participant-${participantInfo._id}" class="bg-base-300">
-        <video id="participant-${participantInfo._id}-video" muted autoplay playsinline
-            style="padding: 0; margin: 0; width: 150px; height: 100px;"></video>
-        <audio id="participant-${participantInfo._id}-audio" autoplay playsinline
-            style="padding: 0; margin: 0;"></audio>
-        <div id="participant-${participantInfo._id}-username" class="bg-base-300	" style=" text-align: center;">
-            ${participantInfo.name}
-        </div>
-    </div>`
-    $("#remoteParticipantContainer").append(participant)
+    if (participantInfo._id != meeting.participantSessionId) {
+        dish.join(participantInfo._id, participantInfo.name);
+        // dish.playAll();
+    }
 });
 
 meeting.on("participantLeft", function (participantInfo) {
-    console.log("participant has left the room", participantInfo);
-    $(`#participant-${participantInfo._id}`).remove();
-    if (currentActiveSpeaker == participantInfo._id) {
-        $("#activeSpeakerVideo")[0].srcObject = null;
-        $("#activeSpeakerUsername").text('');
-    }
+    // console.log("participant has left the room", participantInfo);
+    // $(`#participant-${participantInfo._id}`).remove();
+    // if (currentActiveSpeaker == participantInfo._id) {
+    //     $("#activeSpeakerVideo")[0].srcObject = null;
+    //     $("#activeSpeakerUsername").text('');
+    // }
+    console.log(`${participantInfo._id} has left the meeting` )
+    dish.left(participantInfo._id);
+    // dish.playAll();
 });
 
 meeting.on("onlineParticipants", function (onlineParticipants) {
 
-    $("#remoteParticipantContainer").html("");
+    // $("#remoteParticipantContainer").html("");
+    // for (let participantInfo of onlineParticipants) {
+    //     if (participantInfo._id !== meeting.participantSessionId) {
+    //         var participant =
+    //             `<div id="participant-${participantInfo._id}" class="bg-base-300">
+    //             <video id="participant-${participantInfo._id}-video" muted autoplay playsinline
+    //                 style="padding: 0; margin: 0; width: 150px; height: 100px;"></video>
+    //             <audio id="participant-${participantInfo._id}-audio" autoplay playsinline
+    //                 style="padding: 0; margin: 0;"></audio>
+    //             <div id="participant-${participantInfo._id}-username" class="bg-base-300	" style=" text-align: center;">
+    //                 ${participantInfo.name}
+    //             </div>
+    //         </div>`
+    //         $("#remoteParticipantContainer").append(participant)
+    //     }
+    // }
     for (let participantInfo of onlineParticipants) {
         if (participantInfo._id !== meeting.participantSessionId) {
-            var participant =
-                `<div id="participant-${participantInfo._id}" class="bg-base-300">
-                <video id="participant-${participantInfo._id}-video" muted autoplay playsinline
-                    style="padding: 0; margin: 0; width: 150px; height: 100px;"></video>
-                <audio id="participant-${participantInfo._id}-audio" autoplay playsinline
-                    style="padding: 0; margin: 0;"></audio>
-                <div id="participant-${participantInfo._id}-username" class="bg-base-300	" style=" text-align: center;">
-                    ${participantInfo.name}
-                </div>
-            </div>`
-            $("#remoteParticipantContainer").append(participant)
+            dish.join(participantInfo._id, participantInfo.name)
         }
     }
+    // dish.playAll();
 });
 
 
@@ -485,17 +499,23 @@ meeting.on("activeSpeaker", function (activeSpeaker) {
 
 
 $("#meetingViewLeave").on("click", async function () {
-    // await meeting.leaveMeeting();
-    // $("#meetingView").addClass("hidden");
-    // $("#leaveView").removeClass("hidden");
-    var elem = document.getElementById("activeSpeakerVideo");
-        if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-        } else if (elem.mozRequestFullScreen) {
-        elem.mozRequestFullScreen();
-        } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) { 
-        elem.msRequestFullscreen();
-        }
+    await meeting.leaveMeeting();
+    $("#meetingView").addClass("hidden");
+    $("#leaveView").removeClass("hidden");
 });
+window.addEventListener("load", function () {
+    console.log("HELLO ==================");
+    // render dish
+    dish.append();
+
+    // resize the cameras
+    dish.resize();
+
+    // resize event of window
+    window.addEventListener("resize", function () {
+        // resize event to dimension cameras
+        dish.resize();
+        console.log("RESIZING ===")
+    });
+}, false);
+
