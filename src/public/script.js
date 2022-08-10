@@ -1,11 +1,14 @@
 const meeting = new Metered.Meeting();
 let meetingId = "";
+var participantName = "";
 var token = "";
 var currentActiveSpeaker = "";
 let scenary = document.getElementsByClassName("Scenary")[0];
 // create dish
 let dish = new Dish(scenary);
+let stateScenary = 1;
 
+var socket = io();
 
 $("#joinPrivate").on("click", () => {
     if ($("#joinPrivate").prop("checked") == true) {
@@ -311,6 +314,7 @@ $("#joinMeetingButton").on("click", async function () {
         $("#meetingView").removeClass("hidden");
 
         dish.join(meeting.participantSessionId, username);
+        participantName = username;
         // dish.playAll();
 
         if (cameraOn) {
@@ -329,6 +333,22 @@ $("#joinMeetingButton").on("click", async function () {
             $("#meetingViewMicrophone").addClass("bg-accent");
             await meeting.startAudio();
         }
+        socket.emit('join room', meetingId);
+        socket.on('chat message', (senderName, msg) => {
+            console.log("RECEIVED MSG");
+            const today = new Date()
+            let message = `
+                <div class="chatbox-message-item received">
+                    <div style="color: green;">${senderName}</div>
+                    <span class="chatbox-message-item-text">
+                        ${msg}
+                    </span>
+                    <span class="chatbox-message-item-time">${addZero(today.getHours())}:${addZero(today.getMinutes())}</span>
+                </div>
+            `
+            chatboxMessageWrapper.insertAdjacentHTML('beforeend', message)
+            scrollBottom();
+        });
 
     } catch (ex) {
         console.log("Error occurred when joining the meetingg", ex);
@@ -476,29 +496,30 @@ meeting.on("onlineParticipants", function (onlineParticipants) {
 });
 
 
-meeting.on("activeSpeaker", function (activeSpeaker) {
-    if (currentActiveSpeaker === activeSpeaker.participantSessionId) return;
+// meeting.on("activeSpeaker", function (activeSpeaker) {
+//     if (currentActiveSpeaker === activeSpeaker.participantSessionId) return;
 
-    $("#activeSpeakerUsername").text(activeSpeaker.name + ' is speaking');
-    currentActiveSpeaker = activeSpeaker.participantSessionId;
-    if ($(`#participant-${activeSpeaker.participantSessionId}-video`)[0]) {
-        let stream = $(`#participant-${activeSpeaker.participantSessionId}-video`)[0].srcObject;
-        $("#activeSpeakerVideo")[0].srcObject = stream.clone();
-    } else {
-        $("#activeSpeakerVideo")[0].srcObject = null;
-    }
+//     $("#activeSpeakerUsername").text(activeSpeaker.name + ' is speaking');
+//     currentActiveSpeaker = activeSpeaker.participantSessionId;
+//     if ($(`#participant-${activeSpeaker.participantSessionId}-video`)[0]) {
+//         let stream = $(`#participant-${activeSpeaker.participantSessionId}-video`)[0].srcObject;
+//         $("#activeSpeakerVideo")[0].srcObject = stream.clone();
+//     } else {
+//         $("#activeSpeakerVideo")[0].srcObject = null;
+//     }
 
-    if (activeSpeaker.participantSessionId === meeting.participantSessionId) {
-        let stream = $(`#meetingAreaLocalVideo`)[0].srcObject;
-        if (stream) {
-            $("#activeSpeakerVideo")[0].srcObject = stream.clone();
-        }
+//     if (activeSpeaker.participantSessionId === meeting.participantSessionId) {
+//         let stream = $(`#meetingAreaLocalVideo`)[0].srcObject;
+//         if (stream) {
+//             $("#activeSpeakerVideo")[0].srcObject = stream.clone();
+//         }
 
-    }
-});
+//     }
+// });
 
 
 $("#meetingViewLeave").on("click", async function () {
+    socket.emit('leave room', meetingId);
     await meeting.leaveMeeting();
     $("#meetingView").addClass("hidden");
     $("#leaveView").removeClass("hidden");
@@ -518,4 +539,102 @@ window.addEventListener("load", function () {
         console.log("RESIZING ===")
     });
 }, false);
+
+
+$("#meetingViewMessage").on("click", () => {
+    console.log("HIHI");
+    console.log(stateScenary);
+    if (stateScenary == 1) {
+        $(".Scenary").css("margin-left", "10px");
+        stateScenary = stateScenary * -1;
+    } else {
+        console.log("CHANGE");
+        $(".Scenary").css("margin-left", "12vw");
+        stateScenary = stateScenary * -1;
+    }
+    chatboxMessage.classList.toggle('show');
+})
+
+// MESSAGE INPUT
+const textarea = $('.chatbox-message-input')[0];
+
+// TOGGLE CHATBOX
+const chatboxMessage = $(".chatbox-message-wrapper")[0];
+
+// CHATBOX MESSAGE
+const chatboxMessageWrapper = $(".chatbox-message-content")[0];
+const chatboxNoMessage = $('.chatbox-message-no-message')[0];
+const chatboxForm = $(".chatbox-message-form")[0];
+$(".chatbox-message-form").submit((e) => {
+	e.preventDefault()
+	if(isValid(textarea.value)) {
+		writeMessage()
+		// setTimeout(autoReply, 1000)
+	}
+})
+
+
+
+function addZero(num) {
+	return num < 10 ? '0'+num : num
+}
+
+function writeMessage() {
+    socket.emit('chat message', meetingId, participantName ,textarea.value.trim().replace(/\n/g, '<br>\n'));
+	const today = new Date()
+	let message = `
+		<div class="chatbox-message-item sent">
+            <div style="color: pink">You</div>
+			<span class="chatbox-message-item-text">
+				${textarea.value.trim().replace(/\n/g, '<br>\n')}
+			</span>
+			<span class="chatbox-message-item-time">${addZero(today.getHours())}:${addZero(today.getMinutes())}</span>
+            
+		</div>
+	`
+	chatboxMessageWrapper.insertAdjacentHTML('beforeend', message)
+	chatboxForm.style.alignItems = 'center'
+	textarea.rows = 1
+	textarea.focus()
+	textarea.value = ''
+    console.log("000000000000000")
+	chatboxNoMessage.style.display = 'none'
+	scrollBottom()
+}
+
+
+
+function autoReply() {
+	const today = new Date()
+	let message = `
+		<div class="chatbox-message-item received">
+            <div style="color: green;">Nguyen Van Khoa</div>
+			<span class="chatbox-message-item-text">
+				Thank you for your awesome support!
+			</span>
+			<span class="chatbox-message-item-time">${addZero(today.getHours())}:${addZero(today.getMinutes())}</span>
+		</div>
+	`
+	chatboxMessageWrapper.insertAdjacentHTML('beforeend', message)
+    scrollBottom();
+	
+}
+$("#scrollDown").on("click", () => {
+	scrollBottom();
+})
+
+function scrollBottom() {
+	chatboxMessageWrapper.scrollTo(0, chatboxMessageWrapper.scrollHeight)
+}
+
+function isValid(value) {
+	let text = value.replace(/\n/g, '')
+	text = text.replace(/\s/g, '')
+
+	return text.length > 0
+}
+
+// Socket io for chatting
+
+
 

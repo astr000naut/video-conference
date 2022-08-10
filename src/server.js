@@ -10,6 +10,11 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
+const http = require('http');
+const server = http.createServer(app);
+const {Server} = require("socket.io");
+const io = new Server(server);
+
 // Check config variable ==============================
 if (!config.METERED_DOMAIN) {
     throw new Error("Missing METERED_DOMAIN");
@@ -253,7 +258,7 @@ app.get("/metered-domain", (req, res) => {
 
 
 // Start server ========================================
-app.listen(port, () => {
+server.listen(port, () => {
     console.log("LISTENING ON PORT 4000")
 })
 
@@ -264,6 +269,29 @@ process.on('SIGINT', () => {
     mongoose.connection.close()
     process.exit(0);
 });
+
+
+// Socket io for chatting
+
+io.on('connection', (socket) => {
+
+    socket.on('join room', (meetingID) => {
+        console.log("JOINED " + meetingID) ;
+        socket.join(meetingID);
+    })
+    socket.on('chat message', (meetingId, participantName, message) => {
+        console.log("RECEIVE " + message);
+        // io.to(meetingId).emit('chat message', participantName, message);
+        socket.broadcast
+        .to(meetingId)
+        .emit('chat message', participantName, message);
+    })
+    
+    socket.on('leave room', (meetingId) => {
+        socket.leave(meetingId);
+    })
+})
+
 
 
 // Other function =======================================
