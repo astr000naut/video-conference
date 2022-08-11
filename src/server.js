@@ -13,7 +13,17 @@ const saltRounds = 10;
 const http = require('http');
 const server = http.createServer(app);
 const {Server} = require("socket.io");
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: "*"
+    }
+});
+
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+  });
 
 // Check config variable ==============================
 if (!config.METERED_DOMAIN) {
